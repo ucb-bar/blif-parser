@@ -2,8 +2,9 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use strum_macros::EnumCount as EnumCountMacro;
+use std::mem::discriminant;
 
-#[derive(PartialEq, Debug, Clone, Default, Serialize, EnumCountMacro)]
+#[derive(Debug, Clone, Default, Serialize, EnumCountMacro)]
 #[repr(u32)]
 pub enum Primitives {
     #[default]
@@ -15,6 +16,12 @@ pub enum Primitives {
     Latch  { input: String, output: String, control: String, init: LatchInit },
     Subckt { name: String, conns: IndexMap<String, String> },
     Module { name: String, inputs: Vec<String>, outputs: Vec<String>, elems: Vec<Primitives> },
+}
+
+impl PartialEq for Primitives {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
 }
 
 #[repr(u8)]
@@ -35,5 +42,16 @@ impl LatchInit {
             "2" => LatchInit::DONTCARE,
             _ => LatchInit::UNKNOWN,
         }
+    }
+}
+
+#[cfg(test)]
+pub mod primitives_test {
+    use super::*;
+
+    #[test]
+    pub fn test_equality() {
+        assert_eq!(Primitives::NOP == Primitives::Input { name: "hello".to_string() }, false);
+        assert_eq!(Primitives::Input { name: "bye".to_string() } == Primitives::Input { name: "hello".to_string() }, true);
     }
 }

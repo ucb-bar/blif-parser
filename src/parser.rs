@@ -290,12 +290,12 @@ pub mod parser_tests {
     }
 
     #[test]
-    pub fn test_adder() {
+    pub fn test_adder_parse() {
         assert_eq!(test_blif_parser("./tests/Adder.lut.blif"), true);
     }
 
     #[test]
-    pub fn test_gcd() {
+    pub fn test_gcd_parse() {
         assert_eq!(test_blif_parser("./tests/GCD.lut.blif"), true);
     }
 }
