@@ -31,8 +31,8 @@ pub enum ParsedPrimitive {
     Module { name: String, inputs: Vec<String>, outputs: Vec<String>, elems: Vec<ParsedPrimitive> },
 }
 
-impl From<ParsedPrimitive> for Primitive {
-    fn from(value: ParsedPrimitive) -> Self {
+impl From<&ParsedPrimitive> for Primitive {
+    fn from(value: &ParsedPrimitive) -> Self {
         match value {
             ParsedPrimitive::NOP           => Primitive::NOP,
             ParsedPrimitive::Input  { .. } => Primitive::Input,
