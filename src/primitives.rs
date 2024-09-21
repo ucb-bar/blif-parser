@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use strum_macros::EnumCount as EnumCountMacro;
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize, EnumCountMacro)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, EnumCountMacro)]
 #[repr(u32)]
 pub enum Primitive {
     #[default]
