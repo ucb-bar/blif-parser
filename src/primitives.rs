@@ -1,8 +1,13 @@
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use strum_macros::EnumCount as EnumCountMacro;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Default, Serialize, EnumCountMacro)]
+#[repr(u32)]
 pub enum Primitives {
+    #[default]
+    NOP = 0,
     Input  { name: String },
     Output { name: String },
     Lut    { inputs: Vec<String>, output: String, table: Vec<Vec<u8>> },
@@ -13,7 +18,7 @@ pub enum Primitives {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LatchInit {
     /// Defined in Yosys spec
     ZER0 = 0,
