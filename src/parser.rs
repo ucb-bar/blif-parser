@@ -46,7 +46,7 @@ fn lut_table_parser<'a>(input: &'a str, table: &mut Vec<Vec<u8>>) -> IResultStr<
     Ok(("", ""))
 }
 
-fn lut_body_parser<'a>(input: &'a str, luts: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn lut_body_parser<'a>(input: &'a str, luts: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     let (i, ioline) = terminated_newline(input)?;
     let mut io: Vec<&str> = ioline.split(' ').collect();
 
@@ -72,7 +72,7 @@ fn lut_body_parser<'a>(input: &'a str, luts: &mut Vec<Primitives>) -> IResultStr
         inputs.remove(*idx);
     }
 
-    luts.push(Primitives::Lut {
+    luts.push(ParsedPrimitive::Lut {
         inputs: inputs,
         output: output,
         table: lut_table
@@ -81,7 +81,7 @@ fn lut_body_parser<'a>(input: &'a str, luts: &mut Vec<Primitives>) -> IResultStr
     Ok((i, ""))
 }
 
-fn subckt_parser<'a>(input: &'a str, subckts: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn subckt_parser<'a>(input: &'a str, subckts: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     let (i, sline) = terminated_newline(input)?;
     let conns_vec: Vec<&str> = sline.split(' ').collect();
     let name = conns_vec[0];
@@ -94,7 +94,7 @@ fn subckt_parser<'a>(input: &'a str, subckts: &mut Vec<Primitives>) -> IResultSt
         conns.insert(lhs.to_string(), rhs.to_string());
     });
 
-    subckts.push(Primitives::Subckt {
+    subckts.push(ParsedPrimitive::Subckt {
         name: name.to_string(),
         conns: conns,
     });
@@ -105,7 +105,7 @@ fn subckt_parser<'a>(input: &'a str, subckts: &mut Vec<Primitives>) -> IResultSt
 // _SDFF_NP0_ : FF with reset C D Q R
 // _DFFE_PN_  : FF with enables C D E Q
 // _SDFFE_PP0N_ : FF with reset and enable C D E Q R
-fn gate_parser<'a>(input: &'a str, gates: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn gate_parser<'a>(input: &'a str, gates: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     let (i, line) = terminated_newline(input)?;
 
     let signal_conns: Vec<&str> = line.split(' ').collect();
@@ -140,11 +140,11 @@ fn gate_parser<'a>(input: &'a str, gates: &mut Vec<Primitives>) -> IResultStr<'a
         }
     }
 
-    gates.push(Primitives::Gate { c: c, d: d, q: q, r: r, e: e });
+    gates.push(ParsedPrimitive::Gate { c: c, d: d, q: q, r: r, e: e });
     Ok((i, ""))
 }
 
-fn latch_parser<'a>(input: &'a str, latches: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn latch_parser<'a>(input: &'a str, latches: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     let (i, line) = terminated_newline(input)?;
     let latch_info: Vec<&str> = line.split(' ').collect();
 
@@ -176,11 +176,11 @@ fn latch_parser<'a>(input: &'a str, latches: &mut Vec<Primitives>) -> IResultStr
         _ =>
             ()
     }
-    latches.push(Primitives::Latch { input: input, output: output, control: control, init: init });
+    latches.push(ParsedPrimitive::Latch { input: input, output: output, control: control, init: init });
     Ok((i, ""))
 }
 
-fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     let body_end_marker = "\n.end\n";
 
     // Get module body
@@ -224,7 +224,7 @@ fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<Primitives>) -> IRes
         (i, _) = take_until("\n")(i)?;
     }
 
-    modules.push(Primitives::Module {
+    modules.push(ParsedPrimitive::Module {
         name: name.to_string(),
         inputs: inputs,
         outputs: outputs,
@@ -234,7 +234,7 @@ fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<Primitives>) -> IRes
     Ok((i, ""))
 }
 
-fn parse_modules_from_blif_str<'a>(input: &'a str, circuit: &mut Vec<Primitives>) -> IResultStr<'a> {
+fn parse_modules_from_blif_str<'a>(input: &'a str, circuit: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
     // remove comment
     let (i, _) = value((), pair(tag("#"), is_not("\n")))(input)?;
     let (i, _) = take_until(".")(i)?;
@@ -249,7 +249,7 @@ fn parse_modules_from_blif_str<'a>(input: &'a str, circuit: &mut Vec<Primitives>
     Ok(("", ""))
 }
 
-fn parse_blif(input: &str) -> Result<Vec<Primitives>, String> {
+fn parse_blif(input: &str) -> Result<Vec<ParsedPrimitive>, String> {
     let mut circuit = vec![];
     let res = parse_modules_from_blif_str(input, &mut circuit);
     match res {
@@ -262,7 +262,7 @@ fn parse_blif(input: &str) -> Result<Vec<Primitives>, String> {
     }
 }
 
-pub fn parse_blif_file(input_file_path: &str) -> Result<Vec<Primitives>, String> {
+pub fn parse_blif_file(input_file_path: &str) -> Result<Vec<ParsedPrimitive>, String> {
     let blif_file = fs::read_to_string(input_file_path);
     match blif_file {
         Ok(blif_str) => {
