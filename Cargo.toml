@@ -2,6 +2,11 @@
 name = "blif-parser"
 version = "0.1.0"
 edition = "2021"
+authors = ["Joonho Whangbo <joonho.whangbo@berkeley.edu>"]
+license = "MIT"
+readme = "README.md"
+description = "Rust parser for BLIF files"
+repository = "https://github.com/ucb-bar/blif-parser/"
 
 [dependencies]
 indexmap = "2.5.0"
