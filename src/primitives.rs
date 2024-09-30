@@ -3,20 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use strum_macros::EnumCount as EnumCountMacro;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, EnumCountMacro)]
-#[repr(u32)]
-pub enum Primitive {
-    #[default]
-    NOP = 0,
-    Input,
-    Output,
-    Lut,
-    Gate,
-    Latch,
-    Subckt,
-    Module,
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Serialize, EnumCountMacro)]
 #[repr(u32)]
 pub enum ParsedPrimitive {
@@ -29,21 +15,6 @@ pub enum ParsedPrimitive {
     Latch  { input: String, output: String, control: String, init: LatchInit },
     Subckt { name: String, conns: IndexMap<String, String> },
     Module { name: String, inputs: Vec<String>, outputs: Vec<String>, elems: Vec<ParsedPrimitive> },
-}
-
-impl From<&ParsedPrimitive> for Primitive {
-    fn from(value: &ParsedPrimitive) -> Self {
-        match value {
-            ParsedPrimitive::NOP           => Primitive::NOP,
-            ParsedPrimitive::Input  { .. } => Primitive::Input,
-            ParsedPrimitive::Output { .. } => Primitive::Output,
-            ParsedPrimitive::Lut    { .. } => Primitive::Lut,
-            ParsedPrimitive::Gate   { .. } => Primitive::Gate,
-            ParsedPrimitive::Latch  { .. } => Primitive::Latch,
-            ParsedPrimitive::Subckt { .. } => Primitive::Subckt,
-            ParsedPrimitive::Module { .. } => Primitive::Module,
-        }
-    }
 }
 
 #[repr(u8)]
@@ -64,16 +35,5 @@ impl LatchInit {
             "2" => LatchInit::DONTCARE,
             _ => LatchInit::UNKNOWN,
         }
-    }
-}
-
-#[cfg(test)]
-pub mod primitives_test {
-    use super::*;
-
-    #[test]
-    pub fn test_equality() {
-        assert_eq!(Primitive::NOP == Primitive::Input, false);
-        assert_eq!(Primitive::Input == Primitive::Input, true);
     }
 }
