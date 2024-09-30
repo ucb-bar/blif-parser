@@ -1,6 +1,6 @@
 [package]
 name = "blif-parser"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["Joonho Whangbo <joonho.whangbo@berkeley.edu>"]
 license = "MIT"
