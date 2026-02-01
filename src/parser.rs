@@ -6,6 +6,7 @@ type IResultStr<'a> = IResult<&'a str, &'a str>;
 
 use nom::{
     bytes::complete::{is_not, tag, take_until},
+    branch::alt,
     combinator::value,
     sequence::{pair, terminated},
     IResult,
@@ -20,8 +21,7 @@ fn take_until_or_end<'a>(tag: &'a str, istr: &'a str) -> IResultStr<'a> {
 }
 
 fn terminated_newline<'a>(istr: &'a str) -> IResultStr<'a> {
-    let ret: IResult<&str, &str> =
-        terminated(take_until("\n"), nom::character::complete::newline)(istr);
+    let ret: IResult<&str, &str> = terminated(take_until("\n"), nom::character::complete::line_ending)(istr);
     match ret {
         Ok(x) => Ok(x),
         Err(_) => Ok(("", istr)),
@@ -166,22 +166,23 @@ fn latch_parser<'a>(input: &'a str, latches: &mut Vec<ParsedPrimitive>) -> IResu
 }
 
 fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
-    let body_end_marker = "\n.end\n";
+    const MODULE_END_UNIX: &'static str = "\n.end\n";
+    const MODULE_END_WINDOWS: &'static str = "\r\n.end\r\n";
 
     // Get module body
     let (i, _) = tag(".model ")(input)?;
-    let (i, name) = terminated(take_until("\n"), nom::character::complete::newline)(i)?;
+    let (i, name) = terminated(take_until("\n"), nom::character::complete::line_ending)(i)?;
     let (mut i, body) = terminated(
-        take_until(body_end_marker),
-        nom::character::complete::newline,
+        alt((take_until(MODULE_END_WINDOWS), take_until(MODULE_END_UNIX))),
+        nom::character::complete::line_ending,
     )(i)?;
 
     // Parse inputs
-    let (bi, iline) = terminated(take_until("\n"), nom::character::complete::newline)(body)?;
+    let (bi, iline) = terminated(take_until("\n"), nom::character::complete::line_ending)(body)?;
     let inputs: Vec<String> = iline.split(' ').map(|v| v.to_string()).skip(1).collect();
 
     // Parse outputs
-    let (bi, oline) = terminated(take_until("\n"), nom::character::complete::newline)(bi)?;
+    let (bi, oline) = terminated(take_until("\n"), nom::character::complete::line_ending)(bi)?;
     let outputs: Vec<String> = oline.split(' ').map(|v| v.to_string()).skip(1).collect();
 
     let mut elems = vec![];
@@ -201,7 +202,7 @@ fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<ParsedPrimitive>) ->
         }
     }
 
-    if i.len() > body_end_marker.to_string().len() {
+    if i.len() > MODULE_END_UNIX.len() {
         // Advance to the next .end
         (i, _) = take_until(".")(i)?;
     } else {
@@ -220,21 +221,21 @@ fn module_body_parser<'a>(input: &'a str, modules: &mut Vec<ParsedPrimitive>) ->
 }
 
 fn parse_modules_from_blif_str<'a>(input: &'a str, circuit: &mut Vec<ParsedPrimitive>) -> IResultStr<'a> {
-    // remove comment
-    let (i, _) = value((), pair(tag("#"), is_not("\n")))(input)?;
+    // remove comments; is_not will stop before \r or \n
+    let (i, _) = value((), pair(tag("#"), is_not("\r\n")))(input)?;
     let (i, _) = take_until(".")(i)?;
 
     let mut i = i;
     while i.len() > 4 {
         (i, _) = module_body_parser(i, circuit)?;
-        (i, _) = take_until_or_end("\n.model", i)?;
-        (i, _) = terminated_newline(i)?;
+        (i, _) = take_until_or_end("\n", i)?;
+        (i, _) = take_until_or_end(".model", i)?;
     }
 
     Ok(("", ""))
 }
 
-fn parse_blif(input: &str) -> Result<Vec<ParsedPrimitive>, String> {
+pub fn parse_blif(input: &str) -> Result<Vec<ParsedPrimitive>, String> {
     let mut circuit = vec![];
     let res = parse_modules_from_blif_str(input, &mut circuit);
     match res {
@@ -277,6 +278,11 @@ pub mod parser_tests {
     #[test]
     pub fn test_adder_parse() {
         assert_eq!(test_blif_parser("./tests/Adder.lut.blif"), true);
+    }
+
+    #[test]
+    pub fn test_adder_two_mod_parse() {
+        assert_eq!(test_blif_parser("./tests/AdderTwoMod.blif"), true);
     }
 
     #[test]
